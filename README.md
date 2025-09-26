@@ -11,22 +11,19 @@
 
 ```javascript
 // 初始化
-const Module = await createModule();
+initModule()
 
-// 写入图片到虚拟文件系统
-Module.FS_writeFile("/input.png", imageData);
+// 下载ico
+getIco()
 
-// 转换ICO
-Module.ccall("wasm_convert_to_ico", "number", ["string", "string"], ["/input.png", "/output.ico"]);
+// 下载png
+getPngs()
 
-// 转换ICNS  
-Module.ccall("wasm_convert_to_icns", "number", ["string", "string"], ["/input.png", "/output.icns"]);
+// 下载icns
+getIcns()
 
-// 同时转换ICO+ICNS+多尺寸PNG
-Module.ccall("wasm_convert_to_both", "number", ["string", "string"], ["/input.png", "/output"]);
-
-// 读取结果
-const icoData = Module.FS_readFile("/output.ico");
+// 获取所有
+getImageBoth()
 ```
 
 ## 快速测试

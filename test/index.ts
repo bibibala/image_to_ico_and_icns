@@ -147,3 +147,70 @@ export async function getIcns(file: File): Promise<void> {
         console.error("ICNS生成失败");
     }
 }
+
+
+/**
+ *
+ * @description ico，png，icns
+ * @param file
+ */
+export async function getImageBoth(file): Promise<void> {
+    const buffer = new Uint8Array(await file.arrayBuffer());
+    wasmModule.FS_writeFile("input.png", buffer);
+
+
+    const result = wasmModule.ccall(
+        "wasm_convert_to_both",
+        "number",
+        ["string", "string"],
+        ["input.png", "output_both"],
+    );
+    if (result === 0) {
+        // 创建ZIP文件包含所有输出
+        const zip = new JSZip();
+        let fileCount = 0;
+
+        // 添加ICNS文件
+        try {
+            const icnsData =
+                wasmModule.FS_readFile("/output_both.icns");
+            zip.file(`${getBaseFileName(file.name)}.icns`, icnsData);
+            fileCount++;
+        } catch (e) {
+            console.error(e)
+        }
+
+        // 添加ICO文件
+        try {
+            const icoData =
+                wasmModule.FS_readFile("/output_both.ico");
+            zip.file(`${getBaseFileName(file.name)}.ico`, icoData);
+            fileCount++;
+        } catch (e) {
+            console.error(e)
+        }
+
+        for (const size of ImageSizes) {
+            try {
+                const pngData = wasmModule.FS_readFile(
+                    `/${size}.png`,
+                );
+                zip.file(`${size}.png`, pngData);
+                fileCount++;
+            } catch (e) {
+                console.error(e)
+            }
+        }
+
+        if (fileCount > 0) {
+            const zipBlob = await zip.generateAsync({type: "blob"});
+            downloadFile(
+                zipBlob,
+                `${getBaseFileName(file.name)}_all_formats.zip`,
+                "application/zip",
+            );
+        } else {
+            console.error("生成失败")
+        }
+    }
+}
