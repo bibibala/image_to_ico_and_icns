@@ -103,7 +103,8 @@ static int convertToICO(const char* input,const char* output){
     int w,h,ch; unsigned char* img=stbi_load(input,&w,&h,&ch,4);
     if(!img) return -1;
 
-    int sizes[]={16,32,48,64,128,256,512,1024};
+    // 更新了尺寸数组，包含新增的尺寸
+    int sizes[]={16,24,30,32,40,48,64,72,80,96,128,256,512,1024};
     int n=sizeof(sizes)/sizeof(sizes[0]);
 
     ico_hdr_t hdr={0,1,(uint16_t)n};
@@ -148,26 +149,55 @@ int wasm_convert_to_pngs(const char* input){
     int w,h,ch; unsigned char* img=stbi_load(input,&w,&h,&ch,4);
     if(!img) return -1;
 
-    int sizes[]={16,32,48,64,128,256,512,1024};
+    // 更新了尺寸数组，包含新增的尺寸
+    int sizes[]={16,24,30,32,40,48,64,72,80,96,128,256,512,1024};
     int n=sizeof(sizes)/sizeof(sizes[0]);
+    int success_count = 0;
 
     for(int i=0;i<n;i++){
         int sz=sizes[i];
         unsigned char* resized=(unsigned char*)malloc(sz*sz*4);
-        if(!resized) continue;
+        if(!resized) {
+            printf("Failed to allocate memory for size %d\n", sz);
+            continue;
+        }
 
-        stbir_resize_uint8(img,w,h,0,resized,sz,sz,0,4);
-        size_t png_sz; unsigned char* png=create_png_mem(resized,sz,sz,4,&png_sz);
-        free(resized); if(!png) continue;
+        int resize_result = stbir_resize_uint8(img,w,h,0,resized,sz,sz,0,4);
+        if(!resize_result) {
+            printf("Failed to resize to %dx%d\n", sz, sz);
+            free(resized);
+            continue;
+        }
 
-        char fname[32]; snprintf(fname,sizeof(fname),"/%d.png", sz);
+        size_t png_sz;
+        unsigned char* png=create_png_mem(resized,sz,sz,4,&png_sz);
+        free(resized);
+        if(!png) {
+            printf("Failed to create PNG for size %d\n", sz);
+            continue;
+        }
+
+        char fname[32];
+        snprintf(fname,sizeof(fname),"/%d.png", sz);
         FILE* out=fopen(fname,"wb");
-        if(out){ fwrite(png,1,png_sz,out); fclose(out);}
+        if(out){
+            size_t written = fwrite(png,1,png_sz,out);
+            fclose(out);
+            if(written == png_sz) {
+                success_count++;
+                printf("Successfully created %s (%zu bytes)\n", fname, png_sz);
+            } else {
+                printf("Failed to write complete file %s\n", fname);
+            }
+        } else {
+            printf("Failed to open file %s for writing\n", fname);
+        }
         free(png);
     }
 
     stbi_image_free(img);
-    return 0;
+    printf("Successfully generated %d out of %d PNG files\n", success_count, n);
+    return success_count == n ? 0 : -1;
 }
 
 // ---------------- 导出接口 ----------------

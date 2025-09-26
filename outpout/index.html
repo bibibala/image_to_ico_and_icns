@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-    <meta charset="UTF-8">
-    <title>WASM 图片转换测试</title>
+<meta charset="UTF-8">
+<title>WASM 图片转换测试</title>
 </head>
 <body>
 <h2>WASM 图片转换测试</h2>
@@ -16,81 +16,121 @@
 <pre id="log"></pre>
 
 <script type="module">
-    import createModule from "./fun.js";
-    let Module, inputFile=null;
-    const log=msg=>document.getElementById("log").textContent+=msg+"\n";
+import createModule from "./fun.js";
+let Module, inputFile=null;
+const log=msg=>document.getElementById("log").textContent+=msg+"\n";
 
-    async function init(){ Module=await createModule(); log("✅ WASM 已加载"); }
-    init();
+async function init(){ Module=await createModule(); log("✅ WASM 已加载"); }
+init();
 
-    document.getElementById("fileInput").addEventListener("change", async e=>{
-        const file=e.target.files[0];
-        if(!file) return;
-        inputFile="/input.png";
-        const buf=new Uint8Array(await file.arrayBuffer());
-        Module.FS_writeFile(inputFile,buf);
-        log(`📂 写入虚拟文件系统: ${inputFile} (${buf.length} bytes)`);
-    });
+document.getElementById("fileInput").addEventListener("change", async e=>{
+    const file=e.target.files[0];
+    if(!file) return;
+    inputFile="/input.png";
+    const buf=new Uint8Array(await file.arrayBuffer());
+    Module.FS_writeFile(inputFile,buf);
+    log(`📂 写入虚拟文件系统: ${inputFile} (${buf.length} bytes)`);
+});
 
-    document.getElementById("btnICNS").addEventListener("click",()=>run("wasm_convert_to_icns"));
-    document.getElementById("btnICO").addEventListener("click",()=>run("wasm_convert_to_ico"));
-    document.getElementById("btnPNGs").addEventListener("click",()=>run("wasm_convert_to_pngs"));
-    document.getElementById("btnBoth").addEventListener("click",()=>run("wasm_convert_to_both"));
+document.getElementById("btnICNS").addEventListener("click",()=>run("wasm_convert_to_icns"));
+document.getElementById("btnICO").addEventListener("click",()=>run("wasm_convert_to_ico"));
+document.getElementById("btnPNGs").addEventListener("click",()=>run("wasm_convert_to_pngs"));
+document.getElementById("btnBoth").addEventListener("click",()=>run("wasm_convert_to_both"));
 
-    async function run(funcName){
-        if(!inputFile){ log("❌ 请先选择文件"); return; }
+async function run(funcName){
+    if(!inputFile){ log("❌ 请先选择文件"); return; }
 
-        const sizes=[16,32,48,64,128,256,512,1024];
+    // 更新尺寸数组，包含新增的尺寸
+    const sizes=[16,24,30,32,40,48,64,72,80,96,128,256,512,1024];
 
-        switch(funcName){
-            case "wasm_convert_to_icns":{
-                const out="/output.icns";
-                const r=Module.ccall(funcName,"number",["string","string"],[inputFile,out]);
-                log(`调用 ${funcName} 返回: ${r}`);
-                if(r===0) download(out,"output.icns");
-                break;
-            }
-            case "wasm_convert_to_ico":{
-                const out="/output.ico";
-                const r=Module.ccall(funcName,"number",["string","string"],[inputFile,out]);
-                log(`调用 ${funcName} 返回: ${r}`);
-                if(r===0) download(out,"output.ico");
-                break;
-            }
-            case "wasm_convert_to_pngs":{
-                const r=Module.ccall(funcName,"number",["string"],[inputFile]);
-                log(`调用 ${funcName} 返回: ${r}`);
-                for(const s of sizes){
-                    const fname=`/${s}.png`;
-                    try{
-                        const data=Module.FS_readFile(fname);
+    switch(funcName){
+        case "wasm_convert_to_icns":{
+            const out="/output.icns";
+            const r=Module.ccall(funcName,"number",["string","string"],[inputFile,out]);
+            log(`调用 ${funcName} 返回: ${r}`);
+            if(r===0) download(out,"output.icns");
+            break;
+        }
+        case "wasm_convert_to_ico":{
+            const out="/output.ico";
+            const r=Module.ccall(funcName,"number",["string","string"],[inputFile,out]);
+            log(`调用 ${funcName} 返回: ${r}`);
+            if(r===0) download(out,"output.ico");
+            break;
+        }
+        case "wasm_convert_to_pngs":{
+            const r=Module.ccall(funcName,"number",["string"],[inputFile]);
+            log(`调用 ${funcName} 返回: ${r}`);
+            let downloadCount = 0;
+            for(let i = 0; i < sizes.length; i++){
+                const s = sizes[i];
+                const fname=`/${s}.png`;
+                try{
+                    const data=Module.FS_readFile(fname);
+                    // 添加延迟避免浏览器限制下载
+                    setTimeout(() => {
                         download(fname,`${s}.png`,data);
-                    }catch(e){ log(`❌ 缺少 ${fname}`); }
+                        log(`✅ 下载 ${s}.png (${data.length} bytes)`);
+                    }, i * 300); // 每个文件延迟300ms下载
+                    downloadCount++;
+                }catch(e){
+                    log(`❌ 缺少 ${fname}: ${e.message}`);
                 }
-                break;
             }
-            case "wasm_convert_to_both":{
-                const r=Module.ccall(funcName,"number",["string","string"],[inputFile,"/output_both"]);
-                log(`调用 ${funcName} 返回: ${r}`);
-                try{ download("/output_both.icns","output_both.icns"); }catch{}
-                try{ download("/output_both.ico","output_both.ico"); }catch{}
-                for(const s of sizes){
-                    const fname=`/${s}.png`;
-                    try{ const data=Module.FS_readFile(fname); download(fname,`${s}.png`,data);}catch{}
+            log(`📊 总计准备下载 ${downloadCount}/${sizes.length} 个 PNG 文件`);
+            break;
+        }
+        case "wasm_convert_to_both":{
+            const r=Module.ccall(funcName,"number",["string","string"],[inputFile,"/output_both"]);
+            log(`调用 ${funcName} 返回: ${r}`);
+
+            // 先下载ICNS和ICO
+            try{
+                download("/output_both.icns","output_both.icns");
+                log("✅ 下载 ICNS 文件");
+            }catch{
+                log("❌ ICNS 文件下载失败");
+            }
+
+            setTimeout(() => {
+                try{
+                    download("/output_both.ico","output_both.ico");
+                    log("✅ 下载 ICO 文件");
+                }catch{
+                    log("❌ ICO 文件下载失败");
                 }
-                break;
+            }, 500);
+
+            // 然后下载PNG文件，添加延迟
+            let downloadCount = 0;
+            for(let i = 0; i < sizes.length; i++){
+                const s = sizes[i];
+                const fname=`/${s}.png`;
+                try{
+                    const data=Module.FS_readFile(fname);
+                    setTimeout(() => {
+                        download(fname,`${s}.png`,data);
+                        log(`✅ 下载 ${s}.png (${data.length} bytes)`);
+                    }, 1000 + i * 300); // 从1秒后开始，每个文件延迟300ms
+                    downloadCount++;
+                }catch{
+                    log(`❌ 缺少 ${s}.png`);
+                }
             }
+            log(`📊 总计准备下载 ${downloadCount}/${sizes.length} 个 PNG 文件`);
+            break;
         }
     }
+}
 
-    function download(path,filename,data){
-        if(!data) data=Module.FS_readFile(path);
-        const blob=new Blob([data]);
-        const a=document.createElement("a");
-        a.href=URL.createObjectURL(blob);
-        a.download=filename;
-        a.click();
-    }
+function download(path,filename,data){
+    if(!data) data=Module.FS_readFile(path);
+    const blob=new Blob([data]);
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download=filename;
+    a.click();
+}
 </script>
 </body>
 </html>
