@@ -1,13 +1,11 @@
-import createModule from "./fun.js";
 import JSZip from "jszip";
-import fun from "./fun.js";
-
+import createModule from "../output/fun.js";
 
 function getBaseFileName(name) {
     return name.replace(/\.[^/.]+$/, "") || "output";
 };
 
-const downloadFile = (data, filename, mimeType) => {
+function downloadFile(data, filename, mimeType) {
     const blob = new Blob([data], {type: mimeType});
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -38,6 +36,10 @@ export async function initModule() {
  *
  */
 export async function getIco(file) {
+    if (!wasmModule) {
+        throw new Error("WASM模块尚未初始化，请先调用initModule");
+    }
+
     const buffer = new Uint8Array(await file.arrayBuffer());
     wasmModule.FS_writeFile("input.png", buffer);
     const result = wasmModule.ccall(
@@ -50,7 +52,7 @@ export async function getIco(file) {
         const data = wasmModule.FS_readFile("output.ico");
         downloadFile(data, `${getBaseFileName(file.name)}.icns`, "image/icns");
     } else {
-        console.err("生成失败");
+        console.error("ICO生成失败");
     }
 }
 
@@ -65,6 +67,10 @@ const ImageSizes = [
  *
  */
 export async function getPngs(file) {
+    if (!wasmModule) {
+        throw new Error("WASM模块尚未初始化，请先调用initModule");
+    }
+
     const buffer = new Uint8Array(await file.arrayBuffer());
     wasmModule.FS_writeFile("input.png", buffer);
     const result = wasmModule.ccall(
@@ -87,8 +93,11 @@ export async function getPngs(file) {
             const data = await zip.generateAsync({type: "blob"});
             downloadFile(data, `${getBaseFileName(file.name)}_pngs.zip`, "application/zip");
         } else {
-            console.err("生成失败");
+            console.error("PNG生成失败，未生成任何文件");
         }
+    } else {
+        console.error("PNG转换函数调用失败");
+
     }
 }
 
@@ -100,6 +109,10 @@ export async function getPngs(file) {
  */
 
 export async function getIcns(file) {
+    if (!wasmModule) {
+        throw new Error("WASM模块尚未初始化，请先调用initModule");
+    }
+
     const buffer = new Uint8Array(await file.arrayBuffer());
     wasmModule.FS_writeFile("input.png", buffer);
     const result = wasmModule.ccall(
@@ -112,6 +125,6 @@ export async function getIcns(file) {
         const data = wasmModule.FS_readFile("output.icns");
         downloadFile(data, `${getBaseFileName(file.name)}.ico`, "image/icns");
     } else {
-        console.err("生成失败");
+        console.error("ICNS生成失败");
     }
 }

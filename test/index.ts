@@ -1,5 +1,5 @@
 import JSZip from "jszip";
-import createModule from "./fun.js";
+import createModule from "../output/fun.js";
 
 // 定义WASM模块的类型
 interface WasmModule {
@@ -76,7 +76,7 @@ const ImageSizes: number[] = [
 /**
  *
  * @description png
- * @param file {File} 输入的图片文件
+ * @param file {File}
  *
  */
 export async function getPngs(file: File): Promise<void> {
