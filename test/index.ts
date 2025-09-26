@@ -154,7 +154,7 @@ export async function getIcns(file: File): Promise<void> {
  * @description ico，png，icns
  * @param file
  */
-export async function getImageBoth(file): Promise<void> {
+export async function getImageBoth(file: File): Promise<void> {
     const buffer = new Uint8Array(await file.arrayBuffer());
     wasmModule.FS_writeFile("input.png", buffer);
 
