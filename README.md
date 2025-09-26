@@ -30,4 +30,4 @@ const icoData = Module.FS_readFile("/output.ico");
 ```
 
 ## 快速测试
-打开 `outpout/index.html` 即可测试。
+打开 `output/index.html` 即可测试。
