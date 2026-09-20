@@ -25,11 +25,13 @@ jobs:
             -I include/ \
             -o dist/fun.js \
             -O3 \
-            -s EXPORTED_FUNCTIONS="['_analyze','_malloc','_free']" \
-            -s EXPORTED_RUNTIME_METHODS="['ccall','cwrap','HEAPF64']" \
+            -s EXPORT_ALL=1 \
+            -s LINKABLE=1 \
+            -s EXPORTED_RUNTIME_METHODS="['ccall','cwrap','FS']" \
             -s MODULARIZE=1 \
             -s EXPORT_NAME="createModule" \
-            -s ENVIRONMENT=web
+            -s ENVIRONMENT=web \
+            -s FORCE_FILESYSTEM=1
 
       - name: Generate tag
         id: tag
