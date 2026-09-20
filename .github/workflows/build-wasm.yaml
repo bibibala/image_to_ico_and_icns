@@ -29,6 +29,7 @@ jobs:
             -s LINKABLE=1 \
             -s EXPORTED_RUNTIME_METHODS="['ccall','cwrap','FS']" \
             -s MODULARIZE=1 \
+            -s EXPORT_ES6=1 \
             -s EXPORT_NAME="createModule" \
             -s ENVIRONMENT=web \
             -s FORCE_FILESYSTEM=1

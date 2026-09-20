@@ -1,0 +1,23 @@
+#!/bin/bash
+set -e  # 出错立即停止
+
+# 使用前先确认已经 source 过 emsdk 环境，例如：
+# source /path/to/emsdk/emsdk_env.sh
+
+mkdir -p dist
+
+emcc src/*.c \
+  -I include/ \
+  -o dist/fun.js \
+  -O3 \
+  -s EXPORT_ALL=1 \
+  -s LINKABLE=1 \
+  -s EXPORTED_RUNTIME_METHODS="['ccall','cwrap','FS']" \
+  -s MODULARIZE=1 \
+  -s EXPORT_ES6=1 \
+  -s EXPORT_NAME="createModule" \
+  -s ENVIRONMENT=web \
+  -s FORCE_FILESYSTEM=1
+
+echo "编译完成，产物在 dist/ 目录下："
+ls -lh dist/
