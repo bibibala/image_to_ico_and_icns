@@ -1,50 +1,48 @@
-# 图片转图标工具
+# Image to ICO & ICNS Converter
 
-把图片转换成ICO（Windows图标）和ICNS（macOS图标）格式。
+A WebAssembly-powered tool to convert images to **ICO** (Windows icons) and **ICNS** (macOS icons) formats, plus multiple PNG sizes. Built with C and compiled via Emscripten.
 
-## 功能
-- 图片 → ICO格式
-- 图片 → ICNS格式  
-- 自动生成多种尺寸（16-1024像素）
+## Features
 
-## 已封装好可直接使用，包含js/ts
-### test/index.js  test/index.ts
+- **ICO Generation**: 14 standard sizes (16×16 to 1024×1024)
+- **ICNS Generation**: 13 standard sizes (16×16 to 1024×1024, including @2x variants)
+- **Multi-size PNG Export**: All standard icon sizes as individual PNG files
+- **Batch Conversion**: ICO + ICNS + PNGs in one call
+- **Zero Dependencies**: Uses `stb_image`, `stb_image_resize`, `stb_image_write`
+- **Web & Node.js Ready**: ES6 module output
 
-```javascript
-// 初始化
-initModule()
+## Usage
 
-// 下载ico
-getIco()
+This library has been integrated into **[ts-lab](https://github.com/bibibala/ts-lab)**. See the [documentation](https://ts-lab.netlify.app/zh/api/wasm/image.html) for complete usage examples.
 
-// 下载png
-getPngs()
+## Building from Source
 
-// 下载icns
-getIcns()
+Requires [Emscripten](https://emscripten.org/):
 
-// 获取所有
-getImageBoth()
+```bash
+./build.sh
 ```
 
-## 主要方法
+Output: `dist/fun.js` (ES6 module) and `dist/fun.wasm`
 
-```javascript
-// 写入图片到虚拟文件系统
-Module.FS_writeFile("/input.png", imageData);
+## API
 
-// 转换ICO
-Module.ccall("wasm_convert_to_ico", "number", ["string", "string"], ["/input.png", "/output.ico"]);
+| Function | Parameters | Returns | Description |
+|----------|------------|---------|-------------|
+| `wasm_convert_to_ico(input, output)` | `string, string` | `number` | Convert to ICO |
+| `wasm_convert_to_icns(input, output)` | `string, string` | `number` | Convert to ICNS |
+| `wasm_convert_to_both(input, prefix)` | `string, string` | `number` | Convert to ICO + ICNS + PNGs |
+| `wasm_convert_to_pngs(input)` | `string` | `number` | Generate all PNG sizes |
 
-// 转换ICNS  
-Module.ccall("wasm_convert_to_icns", "number", ["string", "string"], ["/input.png", "/output.icns"]);
+## GitHub Actions
 
-// 同时转换ICO+ICNS+多尺寸PNG
-Module.ccall("wasm_convert_to_both", "number", ["string", "string"], ["/input.png", "/output"]);
+Automated builds on push to `main`. Releases created with versioned tags.
 
-// 读取结果
-const icoData = Module.FS_readFile("/output.ico");
-```
+## License
 
-## 快速测试
-打开 `test/index.html` 即可测试。
+MIT - see [LICENSE](LICENSE)
+
+## Credits
+
+- [stb_image](https://github.com/nothings/stb) - Image loading/resizing/writing
+- [Emscripten](https://emscripten.org/) - C to WebAssembly compilation
