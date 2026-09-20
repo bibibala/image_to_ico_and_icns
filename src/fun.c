@@ -10,12 +10,6 @@
 #include "stb_image_resize.h"
 #include "stb_image_write.h"
 
-#ifdef __EMSCRIPTEN__
-#include <emscripten/emscripten.h>
-#else
-#define EMSCRIPTEN_KEEPALIVE
-#endif
-
 // ---------------- ICNS ----------------
 typedef struct { char magic[4]; uint32_t length; } icns_header_t;
 typedef struct { char type[4]; uint32_t length; } icns_entry_header_t;
@@ -144,7 +138,6 @@ static int convertToICO(const char* input,const char* output){
 }
 
 // ---------------- PNG 多尺寸 ----------------
-EMSCRIPTEN_KEEPALIVE
 int wasm_convert_to_pngs(const char* input){
     int w,h,ch; unsigned char* img=stbi_load(input,&w,&h,&ch,4);
     if(!img) return -1;
@@ -201,11 +194,8 @@ int wasm_convert_to_pngs(const char* input){
 }
 
 // ---------------- 导出接口 ----------------
-EMSCRIPTEN_KEEPALIVE
 int wasm_convert_to_icns(const char* input,const char* output){ return convertToICNS(input,output); }
-EMSCRIPTEN_KEEPALIVE
 int wasm_convert_to_ico(const char* input,const char* output){ return convertToICO(input,output); }
-EMSCRIPTEN_KEEPALIVE
 int wasm_convert_to_both(const char* input,const char* prefix){
     char icns[256],ico[256];
     snprintf(icns,sizeof(icns),"%s.icns",prefix);

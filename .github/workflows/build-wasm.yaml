@@ -1,0 +1,43 @@
+# .github/workflows/release.yml
+name: Build and Release
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    container:
+      image: emscripten/emsdk:latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Compile with emcc
+        run: |
+          mkdir -p dist
+          emcc src/*.c \
+            -I include/ \
+            -o dist/fun.js \
+            -O3 \
+            -s EXPORTED_FUNCTIONS="['_analyze','_malloc','_free']" \
+            -s EXPORTED_RUNTIME_METHODS="['ccall','cwrap','HEAPF64']" \
+            -s MODULARIZE=1 \
+            -s EXPORT_NAME="createModule" \
+            -s ENVIRONMENT=web
+
+      - name: Generate tag
+        id: tag
+        run: echo "tag=v$(date +'%Y.%m.%d')-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          files: dist/*
+          generate_release_notes: true
