@@ -7,30 +7,11 @@
 <body>
 <h2>WASM 图片转换测试</h2>
 
-<input type="file" id="fileInput" accept="image/*,.svg"/><br><br>
-
-<div>
-  输出格式:
-  <select id="fmt">
-    <option value="png">PNG</option>
-    <option value="jpg">JPG</option>
-    <option value="bmp">BMP</option>
-    <option value="tga">TGA</option>
-    <option value="hdr">HDR</option>
-  </select>
-  质量(1-100, PNG为压缩强度): <input type="number" id="quality" value="85" min="1" max="100" style="width:5em"/>
-  最大边长(0=原尺寸): <input type="number" id="maxSize" value="0" min="0" style="width:5em"/>
-  SVG宽(0=自动): <input type="number" id="svgW" value="0" min="0" style="width:5em"/>
-  SVG高(0=自动): <input type="number" id="svgH" value="0" min="0" style="width:5em"/>
-</div>
-
+<input type="file" id="fileInput" accept="image/*"/><br><br>
 <button id="btnICNS">生成 ICNS</button>
 <button id="btnICO">生成 ICO</button>
 <button id="btnPNGs">生成 PNGs</button>
 <button id="btnBoth">生成 ICNS + ICO + PNG</button>
-<button id="btnSVG">SVG → 图片</button>
-<button id="btnCompress">图片压缩</button>
-<button id="btnConvert">格式转换</button>
 
 <pre id="log"></pre>
 
@@ -42,15 +23,10 @@
   async function init(){ Module=await createModule(); log("✅ WASM 已加载"); }
   init();
 
-  function extOf(name){
-    const m=/\.([a-zA-Z0-9]+)$/.exec(name||"");
-    return m ? m[1].toLowerCase() : "png";
-  }
-
   document.getElementById("fileInput").addEventListener("change", async e=>{
     const file=e.target.files[0];
     if(!file) return;
-    inputFile="/input."+extOf(file.name);
+    inputFile="/input.png";
     const buf=new Uint8Array(await file.arrayBuffer());
     Module.FS.writeFile(inputFile,buf);
     log(`📂 写入虚拟文件系统: ${inputFile} (${buf.length} bytes)`);
@@ -60,11 +36,6 @@
   document.getElementById("btnICO").addEventListener("click",()=>run("wasm_convert_to_ico"));
   document.getElementById("btnPNGs").addEventListener("click",()=>run("wasm_convert_to_pngs"));
   document.getElementById("btnBoth").addEventListener("click",()=>run("wasm_convert_to_both"));
-  document.getElementById("btnSVG").addEventListener("click",()=>run("wasm_svg_to_image"));
-  document.getElementById("btnCompress").addEventListener("click",()=>run("wasm_compress_image"));
-  document.getElementById("btnConvert").addEventListener("click",()=>run("wasm_convert_format"));
-
-  function val(id){ return parseInt(document.getElementById(id).value,10)||0; }
 
   async function run(funcName){
     if(!inputFile){ log("❌ 请先选择文件"); return; }
@@ -147,31 +118,6 @@
           }
         }
         log(`📊 总计准备下载 ${downloadCount}/${sizes.length} 个 PNG 文件`);
-        break;
-      }
-      case "wasm_svg_to_image":{
-        const fmt=document.getElementById("fmt").value;
-        const out="/output."+fmt;
-        const r=Module.ccall(funcName,"number",
-          ["string","string","number","number","number"],
-          [inputFile,out,val("svgW"),val("svgH"),val("quality")]);
-        log(`调用 ${funcName} 返回: ${r}`);
-        if(r===0) download(out,"output."+fmt);
-        break;
-      }
-      case "wasm_compress_image":
-      case "wasm_convert_format":{
-        const fmt=document.getElementById("fmt").value;
-        const out="/output."+fmt;
-        const args = funcName==="wasm_compress_image"
-          ? [inputFile,out,val("quality"),val("maxSize")]
-          : [inputFile,out,val("quality")];
-        const types = funcName==="wasm_compress_image"
-          ? ["string","string","number","number"]
-          : ["string","string","number"];
-        const r=Module.ccall(funcName,"number",types,args);
-        log(`调用 ${funcName} 返回: ${r}`);
-        if(r===0) download(out,"output."+fmt);
         break;
       }
     }
